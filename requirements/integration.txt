@@ -27,6 +27,9 @@ mypy==0.942
 types-setuptools
 types-toml
 
+# needed for mercurial-related tests (hg)
+mercurial
+
 # http://doc.pytest.org/en/latest/py27-py34-deprecation.html
 # The pytest 4.6 series will be the last to support Python 2.7
 # and 3.4, and is scheduled to be released by mid-2019.

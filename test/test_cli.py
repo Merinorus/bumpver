@@ -123,6 +123,7 @@ def test_show_env(runner):
     assert result.exit_code == 0
 
     result = runner.invoke(cli.cli, ['show', "-e"])
+    print(result)
     assert result.exit_code == 0
     assert "TAG=alpha" in result.output
 

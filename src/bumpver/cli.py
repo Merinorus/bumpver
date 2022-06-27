@@ -92,11 +92,25 @@ def _validate_date(date: typ.Optional[str], pin_date: bool) -> typ.Optional[dt.d
         sys.exit(1)
 
 
-def _validate_release_tag(tag: typ.Optional[str]) -> None:
+def _validate_custom_tag(tag: str) -> None:
+    pattern          = "[a-z][a-z0-9_]*"
+    custom_tag_regex = re.compile(f"^{pattern}$")
+    if custom_tag_regex.match(tag):
+        return
+    logger.error(f"Invalid argument --tag={tag}")
+    logger.error(f"Custom tags should match this pattern: {pattern}")
+    sys.exit(1)
+
+
+def _validate_release_tag(tag: typ.Optional[str], allow_custom_tags: typ.Optional[bool]) -> None:
     if tag is None:
         return
 
-    if tag in VALID_RELEASE_TAG_VALUES:
+    elif tag in VALID_RELEASE_TAG_VALUES:
+        return
+
+    elif allow_custom_tags:
+        _validate_custom_tag(tag)
         return
 
     logger.error(f"Invalid argument --tag={tag}")
@@ -261,21 +275,22 @@ def cli(verbose: int = 0) -> None:
 @verbose_option
 @version_options
 def test(
-    old_version: str,
-    pattern    : str,
-    verbose    : int = 0,
-    major      : bool = False,
-    minor      : bool = False,
-    patch      : bool = False,
-    tag        : str = None,
-    tag_num    : bool = False,
-    pin_date   : bool = False,
-    date       : typ.Optional[str] = None,
-    set_version: typ.Optional[str] = None,
+    old_version      : str,
+    pattern          : str,
+    verbose          : int = 0,
+    major            : bool = False,
+    minor            : bool = False,
+    patch            : bool = False,
+    tag              : str = None,
+    tag_num          : bool = False,
+    pin_date         : bool = False,
+    date             : typ.Optional[str] = None,
+    set_version      : typ.Optional[str] = None,
+    allow_custom_tags: bool = False,
 ) -> None:
     """Increment a version number for demo purposes."""
     _configure_logging(verbose=max(_VERBOSE, verbose))
-    _validate_release_tag(tag)
+    _validate_release_tag(tag, allow_custom_tags)
 
     raw_pattern = pattern  # use internal naming convention
 
@@ -677,10 +692,11 @@ def _update_cfg_from_vcs(cfg: config.Config, fetch: bool) -> config.Config:
 
 
 def _parse_vcs_options(
-    cfg       : config.Config,
-    commit    : typ.Optional[bool] = None,
-    tag_commit: typ.Optional[bool] = None,
-    push      : typ.Optional[bool] = None,
+    cfg              : config.Config,
+    commit           : typ.Optional[bool] = None,
+    tag_commit       : typ.Optional[bool] = None,
+    push             : typ.Optional[bool] = None,
+    allow_custom_tags: typ.Optional[bool] = None,
 ) -> config.Config:
     if commit is False and tag_commit:
         raise ValueError("--no-commit and --tag-commit cannot be used at the same time")
@@ -699,6 +715,8 @@ def _parse_vcs_options(
         cfg = cfg._replace(tag=tag_commit)
     if push is not None:
         cfg = cfg._replace(push=push)
+    if allow_custom_tags is not None:
+        cfg = cfg._replace(allow_custom_tags=allow_custom_tags)
     return cfg
 
 
@@ -740,27 +758,28 @@ def _parse_vcs_options(
     help="Push to the default remote.",
 )
 def update(
-    dry           : bool = False,
-    allow_dirty   : bool = False,
-    fetch         : bool = True,
-    verbose       : int = 0,
-    major         : bool = False,
-    minor         : bool = False,
-    patch         : bool = False,
-    tag           : typ.Optional[str] = None,
-    tag_num       : bool = False,
-    pin_date      : bool = False,
-    date          : typ.Optional[str] = None,
-    set_version   : typ.Optional[str] = None,
-    commit_message: typ.Optional[str] = None,
-    commit        : typ.Optional[bool] = None,
-    tag_commit    : typ.Optional[bool] = None,
-    push          : typ.Optional[bool] = None,
+    dry              : bool = False,
+    allow_dirty      : bool = False,
+    fetch            : bool = True,
+    verbose          : int = 0,
+    major            : bool = False,
+    minor            : bool = False,
+    patch            : bool = False,
+    tag              : typ.Optional[str] = None,
+    tag_num          : bool = False,
+    pin_date         : bool = False,
+    date             : typ.Optional[str] = None,
+    set_version      : typ.Optional[str] = None,
+    commit_message   : typ.Optional[str] = None,
+    commit           : typ.Optional[bool] = None,
+    tag_commit       : typ.Optional[bool] = None,
+    push             : typ.Optional[bool] = None,
+    allow_custom_tags: typ.Optional[bool] = None,
 ) -> None:
     """Update project files with the incremented version string."""
     verbose = max(_VERBOSE, verbose)
     _configure_logging(verbose)
-    _validate_release_tag(tag)
+    _validate_release_tag(tag, allow_custom_tags)
     maybe_date = _validate_date(date, pin_date)
 
     _, cfg = config.init(project_path=".")
@@ -770,7 +789,7 @@ def update(
         sys.exit(1)
 
     try:
-        cfg = _parse_vcs_options(cfg, commit, tag_commit, push)
+        cfg = _parse_vcs_options(cfg, commit, tag_commit, push, allow_custom_tags)
     except ValueError as ex:
         logger.warning(f"Invalid argument: {ex}")
         sys.exit(1)

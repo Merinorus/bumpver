@@ -517,7 +517,6 @@ devtest:
 		--no-cov \
 		--durations 5 \
 		--verbose \
-		--capture=no \
 		--exitfirst \
 		--failed-first \
 		-k "$${PYTEST_FILTER-$${FLTR}}" \

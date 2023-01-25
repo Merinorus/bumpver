@@ -126,10 +126,11 @@ class Config(typ.NamedTuple):
     pep440_version : str
     commit_message : str
 
-    commit        : bool
-    tag           : bool
-    push          : bool
-    is_new_pattern: bool
+    commit           : bool
+    tag              : bool
+    push             : bool
+    is_new_pattern   : bool
+    allow_custom_tags: bool
 
     file_patterns: PatternsByFile
 
@@ -144,8 +145,10 @@ def _debug_str(cfg: Config) -> str:
         f"\n    version_pattern='{cfg.version_pattern}',",
         f"\n    pep440_version='{cfg.pep440_version}',",
         f"\n    commit_message='{cfg.commit_message}',",
+        f"\n    allow_custom_tags={cfg.allow_custom_tags},",
         f"\n    commit={cfg.commit},",
         f"\n    tag={cfg.tag},",
+        f"\n    allow_custom_tags='{cfg.allow_custom_tags}',",
         f"\n    push={cfg.push},",
         f"\n    is_new_pattern={cfg.is_new_pattern},",
         "\n    file_patterns={",
@@ -378,9 +381,10 @@ def _parse_config(raw_cfg: RawConfig) -> Config:
 
     file_patterns = _compile_file_patterns(raw_cfg, is_new_pattern)
 
-    commit = raw_cfg['commit']
-    tag    = raw_cfg['tag']
-    push   = raw_cfg['push']
+    allow_custom_tags = raw_cfg['allow_custom_tags'] = False
+    commit            = raw_cfg['commit']
+    tag               = raw_cfg['tag']
+    push              = raw_cfg['push']
 
     if tag is None:
         tag = raw_cfg['tag'] = False
@@ -403,6 +407,7 @@ def _parse_config(raw_cfg: RawConfig) -> Config:
         push=push,
         is_new_pattern=is_new_pattern,
         file_patterns=file_patterns,
+        allow_custom_tags=allow_custom_tags,
     )
     logger.debug(_debug_str(cfg))
     return cfg
